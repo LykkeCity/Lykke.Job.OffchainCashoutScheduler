@@ -1,0 +1,2 @@
+# Run this file if you use PowerShell directly
+autorest -Input http://localhost:8080/swagger/v1/swagger.json -CodeGenerator CSharp -OutputDirectory ./BitcoinApi -Namespace Lykke.Job.OffchainCashoutScheduler.BitcoinApi

@@ -59,20 +59,5 @@ namespace Lykke.Job.OffchainCashoutScheduler.AzureRepositories.Settings
         {
             return _table.InsertOrReplaceAsync(new SettingsEntity(key, value));
         }
-
-        public async Task<Dictionary<string, decimal>> GetAll()
-        {
-            var data = await _table.GetDataAsync(SettingsEntity.GeneratePartitionKey());
-
-            return data.ToDictionary(x => x.Asset, x => x.Value);
-        }
-
-        public async Task SetAll(Dictionary<string, decimal> settings)
-        {
-            foreach (var setting in settings)
-            {
-                await Set(setting.Key, setting.Value);
-            }
-        }
     }
 }

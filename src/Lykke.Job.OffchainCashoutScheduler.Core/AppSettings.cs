@@ -15,7 +15,6 @@
 
         public class DbSettings
         {
-            public string DataConnString { get; set; }
             public string LogsConnString { get; set; }
             public string ClientPersonalInfoConnString { get; set; }
             public string OffchainConnString { get; set; }

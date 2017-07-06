@@ -50,7 +50,7 @@ namespace Lykke.Job.OffchainCashoutScheduler.AzureRepositories
 
             ioc.RegisterInstance<IHubCashoutSettingsRepository>(
                 new HubCashoutHubCashoutSettingsRepository(
-                    new AzureTableStorage<SettingsEntity>(settings.Db.DataConnString, "HubCashoutSettings", log)));
+                    new AzureTableStorage<SettingsEntity>(settings.Db.OffchainConnString, "OffchainHubCashoutSettings", log)));
         }
 
         private static ClientsRepository CreateTradersRepository(string connstring, ILog log)

@@ -9,7 +9,5 @@ namespace Lykke.Job.OffchainCashoutScheduler.Core.Domain.Settings
     {
         Task<decimal> Get(string asset);
         Task Set(string key, decimal value);
-        Task<Dictionary<string, decimal>> GetAll();
-        Task SetAll(Dictionary<string, decimal> settings);
     }
 }

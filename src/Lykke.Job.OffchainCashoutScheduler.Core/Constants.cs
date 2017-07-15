@@ -9,7 +9,9 @@ namespace Lykke.Job.OffchainCashoutScheduler.Core
         public const string BtcAssetId = "BTC";
         public const string LkkAssetId = "LKK";
 
-        public const decimal BtcMinCashout = 10.0M;
-        public const decimal LkkMinCashout = 100000M;
+        public const decimal BtcDefaultCashout = 10.0M;
+        public const decimal LkkDefaultCashout = 100000M;
+
+        public const string HubCashoutSettingsKey = "AutoHubCashout";
     }
 }

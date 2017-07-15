@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Common;
 using Common.Log;
 using Lykke.Job.OffchainCashoutScheduler.BitcoinApi;
 using Lykke.Job.OffchainCashoutScheduler.BitcoinApi.Models;
@@ -19,33 +20,33 @@ namespace Lykke.Job.OffchainCashoutScheduler.TriggerHandlers
         private readonly ISlackNotificationsSender _slackNotificationsSender;
         private readonly IOffchainRequestService _offchainRequestService;
         private readonly IWalletCredentialsRepository _walletCredentialsRepository;
-        private readonly IHubCashoutSettingsRepository _hubCashoutSettingsRepository;
+        private readonly IOffchainSettingsRepository _offchainSettingsRepository;
         private readonly IBitcoinApi _bitcoinApi;
         private readonly ILog _logger;
 
-        public HubCashoutFunction(ISlackNotificationsSender slackNotificationsSender, IOffchainRequestService offchainRequestService, IBitcoinApi bitcoinApi, IWalletCredentialsRepository walletCredentialsRepository, ILog logger, IHubCashoutSettingsRepository hubCashoutSettingsRepository)
+        public HubCashoutFunction(ISlackNotificationsSender slackNotificationsSender, IOffchainRequestService offchainRequestService, IBitcoinApi bitcoinApi, IWalletCredentialsRepository walletCredentialsRepository, ILog logger, IOffchainSettingsRepository offchainSettingsRepository)
         {
             _slackNotificationsSender = slackNotificationsSender;
             _offchainRequestService = offchainRequestService;
             _bitcoinApi = bitcoinApi;
             _walletCredentialsRepository = walletCredentialsRepository;
             _logger = logger;
-            _hubCashoutSettingsRepository = hubCashoutSettingsRepository;
+            _offchainSettingsRepository = offchainSettingsRepository;
         }
 
         [TimerTrigger("12:00:00")]
         public async Task TimeTriggeredHandler()
         {
-            await GenerateRequestsForAsset(Constants.BtcAssetId);
+            var settings = await GetSettings();
 
-            await GenerateRequestsForAsset(Constants.LkkAssetId);
+            await GenerateRequestsForAsset(Constants.BtcAssetId, settings[Constants.BtcAssetId]);
+
+            await GenerateRequestsForAsset(Constants.LkkAssetId, settings[Constants.LkkAssetId]);
         }
 
-        private async Task GenerateRequestsForAsset(string asset)
+        private async Task GenerateRequestsForAsset(string asset, decimal minAmount)
         {
             var createdCount = 0;
-
-            var minAmount = await _hubCashoutSettingsRepository.Get(asset);
 
             await _logger.WriteInfoAsync(nameof(HubCashoutFunction), nameof(GenerateRequestsForAsset), asset, "Started");
 
@@ -104,6 +105,21 @@ namespace Lykke.Job.OffchainCashoutScheduler.TriggerHandlers
                 throw new Exception($"Cannot get channels for {asset}, response: {error.Error?.Message}, code: {error.Error?.Code}");
 
             return response as AssetBalanceInfoResponse;
+        }
+
+        private async Task<Dictionary<string, decimal>> GetSettings()
+        {
+            var settings = await _offchainSettingsRepository.Get<string>(Constants.HubCashoutSettingsKey);
+
+            var data = settings.DeserializeJson(() => new Dictionary<string, decimal>());
+
+            if (!data.ContainsKey(Constants.BtcAssetId))
+                data[Constants.BtcAssetId] = Constants.BtcDefaultCashout;
+
+            if (!data.ContainsKey(Constants.LkkAssetId))
+                data[Constants.LkkAssetId] = Constants.LkkDefaultCashout;
+
+            return data;
         }
     }
 }

@@ -48,9 +48,9 @@ namespace Lykke.Job.OffchainCashoutScheduler.AzureRepositories
                 new OffchainIgnoreRepository(
                     new AzureTableStorage<OffchainIgnoreEntity>(settings.Db.OffchainConnString, "OffchainClientsIgnore", log)));
 
-            ioc.RegisterInstance<IHubCashoutSettingsRepository>(
-                new HubCashoutHubCashoutSettingsRepository(
-                    new AzureTableStorage<SettingsEntity>(settings.Db.OffchainConnString, "OffchainHubCashoutSettings", log)));
+            ioc.RegisterInstance<IOffchainSettingsRepository>(
+                new OffchainSettingsRepository(
+                    new AzureTableStorage<OffchainSettingEntity>(settings.Db.OffchainConnString, "OffchainSettings", log)));
         }
 
         private static ClientsRepository CreateTradersRepository(string connstring, ILog log)

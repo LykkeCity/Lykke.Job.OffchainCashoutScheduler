@@ -73,7 +73,7 @@ namespace Lykke.Job.OffchainCashoutScheduler.TriggerHandlers
             }
             finally
             {
-                if (createdCount == 0)
+                if (createdCount != 0)
                     await _slackNotificationsSender.SendAsync("Offchain", ":information_source:", $"New {createdCount} hub requests were created for {asset}. (min. {minAmount})");
 
                 await _logger.WriteInfoAsync(nameof(HubCashoutFunction), nameof(GenerateRequestsForAsset), $"Asset: {asset}, requests created: {createdCount}", "Finished");

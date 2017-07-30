@@ -55,6 +55,11 @@ namespace Lykke.Job.OffchainCashoutScheduler.Services
             return await _offchainRequestRepository.GetCurrentRequests();
         }
 
+        public Task Complete(string requestId)
+        {
+            return _offchainRequestRepository.Complete(requestId);
+        }
+
         public async Task CreateHubCashoutRequests(string asset, string clientId)
         {
             await CreateOffchainRequest(Guid.NewGuid().ToString(), clientId, asset, 0, null, OffchainTransferType.HubCashout);

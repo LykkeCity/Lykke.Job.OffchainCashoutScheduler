@@ -16,6 +16,8 @@ namespace Lykke.Job.OffchainCashoutScheduler.Core.Services
 
         Task<IEnumerable<IOffchainRequest>> GetAllCurrentRequests();
 
+        Task Complete(string requestId);
+
         Task CreateHubCashoutRequests(string asset, string clientId);
     }
 }

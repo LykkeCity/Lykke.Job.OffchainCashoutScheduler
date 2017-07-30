@@ -10,23 +10,25 @@ namespace Lykke.Job.OffchainCashoutScheduler.BitcoinApi.Models
     using Newtonsoft.Json;
     using System.Linq;
 
-    public partial class ToOneAddress
+    public partial class TransactionIdAndHashResponse
     {
         /// <summary>
-        /// Initializes a new instance of the ToOneAddress class.
+        /// Initializes a new instance of the TransactionIdAndHashResponse
+        /// class.
         /// </summary>
-        public ToOneAddress()
+        public TransactionIdAndHashResponse()
         {
           CustomInit();
         }
 
         /// <summary>
-        /// Initializes a new instance of the ToOneAddress class.
+        /// Initializes a new instance of the TransactionIdAndHashResponse
+        /// class.
         /// </summary>
-        public ToOneAddress(string address = default(string), decimal? amount = default(decimal?))
+        public TransactionIdAndHashResponse(string hash = default(string), System.Guid? transactionId = default(System.Guid?))
         {
-            Address = address;
-            Amount = amount;
+            Hash = hash;
+            TransactionId = transactionId;
             CustomInit();
         }
 
@@ -37,13 +39,13 @@ namespace Lykke.Job.OffchainCashoutScheduler.BitcoinApi.Models
 
         /// <summary>
         /// </summary>
-        [JsonProperty(PropertyName = "address")]
-        public string Address { get; set; }
+        [JsonProperty(PropertyName = "hash")]
+        public string Hash { get; set; }
 
         /// <summary>
         /// </summary>
-        [JsonProperty(PropertyName = "amount")]
-        public decimal? Amount { get; set; }
+        [JsonProperty(PropertyName = "transactionId")]
+        public System.Guid? TransactionId { get; set; }
 
     }
 }

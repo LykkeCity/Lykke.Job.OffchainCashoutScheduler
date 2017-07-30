@@ -5,9 +5,10 @@ using System.Threading.Tasks;
 
 namespace Lykke.Job.OffchainCashoutScheduler.Core.Domain.Settings
 {
-    public interface IHubCashoutSettingsRepository
+    public interface IOffchainSettingsRepository
     {
-        Task<decimal> Get(string asset);
-        Task Set(string key, decimal value);
+        Task<T> Get<T>(string key);
+        Task<T> Get<T>(string key, T defaultValue);
+        Task Set<T>(string key, T value);
     }
 }

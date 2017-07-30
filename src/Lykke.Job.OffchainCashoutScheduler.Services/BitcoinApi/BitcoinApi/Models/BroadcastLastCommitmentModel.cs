@@ -10,23 +10,24 @@ namespace Lykke.Job.OffchainCashoutScheduler.BitcoinApi.Models
     using Newtonsoft.Json;
     using System.Linq;
 
-    public partial class CreateCashoutFromHubModel
+    public partial class BroadcastLastCommitmentModel
     {
         /// <summary>
-        /// Initializes a new instance of the CreateCashoutFromHubModel class.
+        /// Initializes a new instance of the BroadcastLastCommitmentModel
+        /// class.
         /// </summary>
-        public CreateCashoutFromHubModel()
+        public BroadcastLastCommitmentModel()
         {
           CustomInit();
         }
 
         /// <summary>
-        /// Initializes a new instance of the CreateCashoutFromHubModel class.
+        /// Initializes a new instance of the BroadcastLastCommitmentModel
+        /// class.
         /// </summary>
-        public CreateCashoutFromHubModel(string clientPubKey = default(string), string hotWalletAddress = default(string), string asset = default(string))
+        public BroadcastLastCommitmentModel(string multisig = default(string), string asset = default(string))
         {
-            ClientPubKey = clientPubKey;
-            HotWalletAddress = hotWalletAddress;
+            Multisig = multisig;
             Asset = asset;
             CustomInit();
         }
@@ -38,13 +39,8 @@ namespace Lykke.Job.OffchainCashoutScheduler.BitcoinApi.Models
 
         /// <summary>
         /// </summary>
-        [JsonProperty(PropertyName = "clientPubKey")]
-        public string ClientPubKey { get; set; }
-
-        /// <summary>
-        /// </summary>
-        [JsonProperty(PropertyName = "hotWalletAddress")]
-        public string HotWalletAddress { get; set; }
+        [JsonProperty(PropertyName = "multisig")]
+        public string Multisig { get; set; }
 
         /// <summary>
         /// </summary>

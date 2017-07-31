@@ -58,13 +58,13 @@ namespace Lykke.Job.OffchainCashoutScheduler.TriggerHandlers
                     {
                         await _logger.WriteInfoAsync(nameof(BroadcastCommitmentFunction), nameof(Process), $"Multisig: {item.Multisig}", "Start commitment broadcasting");
 
-                        var hash = await BroadcastCommitment(item.Multisig, Constants.BtcAssetId);
+                        var response = await BroadcastCommitment(item.Multisig, Constants.BtcAssetId);
 
                         broadcastedCount++;
 
                         await _offchainRequestService.Complete(multisigsWithOldRequests[item.Multisig]);
 
-                        await _logger.WriteInfoAsync(nameof(BroadcastCommitmentFunction), nameof(Process), $"Multisig: {item.Multisig}, hash: {hash}", "Finish commitment broadcasting");
+                        await _logger.WriteInfoAsync(nameof(BroadcastCommitmentFunction), nameof(Process), $"Multisig: {item.Multisig}, hash: {response.TransactionHash}", "Finish commitment broadcasting");
                     }
                     catch (Exception e)
                     {

@@ -13,5 +13,7 @@ namespace Lykke.Job.OffchainCashoutScheduler.Core
         public const decimal LkkDefaultCashout = 100000M;
 
         public const string HubCashoutSettingsKey = "AutoHubCashout";
+        public const string HoursBeforeCommitmentBroadcastingSettingsKey = "HoursBeforeBroadcasting";
+        public const string MaxCommitmentBroadcastCountSettingsKey = "MaxCommitmentBroadcastCount";
     }
 }

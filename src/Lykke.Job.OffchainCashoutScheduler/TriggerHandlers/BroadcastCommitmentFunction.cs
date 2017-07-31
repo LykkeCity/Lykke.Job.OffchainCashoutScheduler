@@ -21,15 +21,17 @@ namespace Lykke.Job.OffchainCashoutScheduler.TriggerHandlers
 
         private readonly IWalletCredentialsRepository _walletCredentialsRepository;
         private readonly IOffchainRequestService _offchainRequestService;
+        private readonly IOffchainSettingsRepository _offchainSettingsRepository;
         private readonly IBitcoinApi _bitcoinApi;
         private readonly ILog _logger;
 
-        public BroadcastCommitmentFunction(IOffchainRequestService offchainRequestService, ILog logger, IBitcoinApi bitcoinApi, IWalletCredentialsRepository walletCredentialsRepository)
+        public BroadcastCommitmentFunction(IOffchainRequestService offchainRequestService, ILog logger, IBitcoinApi bitcoinApi, IWalletCredentialsRepository walletCredentialsRepository, IOffchainSettingsRepository offchainSettingsRepository)
         {
             _offchainRequestService = offchainRequestService;
             _bitcoinApi = bitcoinApi;
             _logger = logger;
             _walletCredentialsRepository = walletCredentialsRepository;
+            _offchainSettingsRepository = offchainSettingsRepository;
         }
 
         [TimerTrigger("01:00:00")]
@@ -43,9 +45,11 @@ namespace Lykke.Job.OffchainCashoutScheduler.TriggerHandlers
 
             var broadcastedCount = 0;
 
+            var maxBroadcastCount = await _offchainSettingsRepository.Get(Constants.MaxCommitmentBroadcastCountSettingsKey, MaxBroadcastCount);
+
             foreach (var item in ordered)
             {
-                if (broadcastedCount >= MaxBroadcastCount)
+                if (broadcastedCount >= maxBroadcastCount)
                     return;
 
                 if (multisigsWithOldRequests.ContainsKey(item.Multisig))
@@ -54,13 +58,13 @@ namespace Lykke.Job.OffchainCashoutScheduler.TriggerHandlers
                     {
                         await _logger.WriteInfoAsync(nameof(BroadcastCommitmentFunction), nameof(Process), $"Multisig: {item.Multisig}", "Start commitment broadcasting");
 
-                        await BroadcastCommitment(item.Multisig, Constants.BtcAssetId);
+                        var hash = await BroadcastCommitment(item.Multisig, Constants.BtcAssetId);
 
                         broadcastedCount++;
 
                         await _offchainRequestService.Complete(multisigsWithOldRequests[item.Multisig]);
 
-                        await _logger.WriteInfoAsync(nameof(BroadcastCommitmentFunction), nameof(Process), $"Multisig: {item.Multisig}", "Finish commitment broadcasting");
+                        await _logger.WriteInfoAsync(nameof(BroadcastCommitmentFunction), nameof(Process), $"Multisig: {item.Multisig}, hash: {hash}", "Finish commitment broadcasting");
                     }
                     catch (Exception e)
                     {
@@ -76,9 +80,11 @@ namespace Lykke.Job.OffchainCashoutScheduler.TriggerHandlers
 
             var currentRequests = await _offchainRequestService.GetAllCurrentRequests();
 
+            var hoursToWait = await _offchainSettingsRepository.Get(Constants.HoursBeforeCommitmentBroadcastingSettingsKey, HoursBeforeCommitmentBroadcasting);
+
             foreach (var request in currentRequests.Where(x => x.AssetId == Constants.BtcAssetId &&
                                                             x.TransferType == Core.Domain.Offchain.OffchainTransferType.HubCashout &&
-                                                            (DateTime.UtcNow - x.CreateDt).TotalHours > HoursBeforeCommitmentBroadcasting))
+                                                            (DateTime.UtcNow - x.CreateDt).TotalHours > hoursToWait))
             {
                 var client = await _walletCredentialsRepository.GetAsync(request.ClientId);
                 if (!result.ContainsKey(client?.MultiSig))
@@ -100,16 +106,20 @@ namespace Lykke.Job.OffchainCashoutScheduler.TriggerHandlers
             return response as AssetBalanceInfoResponse;
         }
 
-        private async Task<AssetBalanceInfoResponse> BroadcastCommitment(string multisig, string asset)
+        private async Task<TransactionHashResponse> BroadcastCommitment(string multisig, string asset)
         {
-            var response = await _bitcoinApi.ApiOffchainBroadcastcommitmentPostAsync(new BroadcastCommitmentModel { });
+            var response = await _bitcoinApi.ApiOffchainCommitmentBroadcastPostAsync(new BroadcastLastCommitmentModel
+            {
+                Multisig = multisig,
+                Asset = asset
+            });
 
             var error = response as ApiException;
 
             if (error != null)
                 throw new Exception($"Cannot get channels for {asset}, response: {error.Error?.Message}, code: {error.Error?.Code}");
 
-            return response as AssetBalanceInfoResponse;
+            return response as TransactionHashResponse;
         }
     }
 }

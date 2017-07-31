@@ -6,6 +6,7 @@ using Lykke.Job.OffchainCashoutScheduler.Core.Domain.ClientPersonalInfo;
 using Lykke.Job.OffchainCashoutScheduler.Core.Domain.Settings;
 using Lykke.Job.OffchainCashoutScheduler.Core.Services;
 using Lykke.JobTriggers.Triggers.Attributes;
+using Lykke.SlackNotifications;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -19,19 +20,23 @@ namespace Lykke.Job.OffchainCashoutScheduler.TriggerHandlers
         private const int HoursBeforeCommitmentBroadcasting = 24;
         private const int MaxBroadcastCount = 10;
 
+        private readonly ISlackNotificationsSender _slackNotificationsSender;
         private readonly IWalletCredentialsRepository _walletCredentialsRepository;
         private readonly IOffchainRequestService _offchainRequestService;
         private readonly IOffchainSettingsRepository _offchainSettingsRepository;
         private readonly IBitcoinApi _bitcoinApi;
         private readonly ILog _logger;
 
-        public BroadcastCommitmentFunction(IOffchainRequestService offchainRequestService, ILog logger, IBitcoinApi bitcoinApi, IWalletCredentialsRepository walletCredentialsRepository, IOffchainSettingsRepository offchainSettingsRepository)
+        public BroadcastCommitmentFunction(IOffchainRequestService offchainRequestService, ILog logger, 
+            IBitcoinApi bitcoinApi, IWalletCredentialsRepository walletCredentialsRepository, 
+            IOffchainSettingsRepository offchainSettingsRepository, ISlackNotificationsSender slackNotificationsSender)
         {
             _offchainRequestService = offchainRequestService;
             _bitcoinApi = bitcoinApi;
             _logger = logger;
             _walletCredentialsRepository = walletCredentialsRepository;
             _offchainSettingsRepository = offchainSettingsRepository;
+            _slackNotificationsSender = slackNotificationsSender;
         }
 
         [TimerTrigger("01:00:00")]
@@ -72,6 +77,9 @@ namespace Lykke.Job.OffchainCashoutScheduler.TriggerHandlers
                     }
                 }
             }
+
+            if (broadcastedCount > 0)
+                await _slackNotificationsSender.SendAsync("Offchain", ":information_source:", $"New {broadcastedCount} hub commitments were broadcasted");
         }
 
         private async Task<Dictionary<string, string>> PrepareExistingRequests()

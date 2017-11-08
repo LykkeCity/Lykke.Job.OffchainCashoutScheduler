@@ -10,25 +10,23 @@ namespace Lykke.Job.OffchainCashoutScheduler.BitcoinApi.Models
     using Newtonsoft.Json;
     using System.Linq;
 
-    public partial class BroadcastLastCommitmentModel
+    public partial class PrivateBccTransferResponse
     {
         /// <summary>
-        /// Initializes a new instance of the BroadcastLastCommitmentModel
-        /// class.
+        /// Initializes a new instance of the PrivateBccTransferResponse class.
         /// </summary>
-        public BroadcastLastCommitmentModel()
+        public PrivateBccTransferResponse()
         {
           CustomInit();
         }
 
         /// <summary>
-        /// Initializes a new instance of the BroadcastLastCommitmentModel
-        /// class.
+        /// Initializes a new instance of the PrivateBccTransferResponse class.
         /// </summary>
-        public BroadcastLastCommitmentModel(string multisig = default(string), string asset = default(string))
+        public PrivateBccTransferResponse(string transaction = default(string), string outputs = default(string))
         {
-            Multisig = multisig;
-            Asset = asset;
+            Transaction = transaction;
+            Outputs = outputs;
             CustomInit();
         }
 
@@ -39,13 +37,13 @@ namespace Lykke.Job.OffchainCashoutScheduler.BitcoinApi.Models
 
         /// <summary>
         /// </summary>
-        [JsonProperty(PropertyName = "multisig")]
-        public string Multisig { get; set; }
+        [JsonProperty(PropertyName = "transaction")]
+        public string Transaction { get; set; }
 
         /// <summary>
         /// </summary>
-        [JsonProperty(PropertyName = "asset")]
-        public string Asset { get; set; }
+        [JsonProperty(PropertyName = "outputs")]
+        public string Outputs { get; set; }
 
     }
 }

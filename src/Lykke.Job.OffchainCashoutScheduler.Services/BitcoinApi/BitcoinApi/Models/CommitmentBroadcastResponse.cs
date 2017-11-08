@@ -8,27 +8,28 @@ namespace Lykke.Job.OffchainCashoutScheduler.BitcoinApi.Models
     using Lykke.Job.OffchainCashoutScheduler;
     using Lykke.Job.OffchainCashoutScheduler.BitcoinApi;
     using Newtonsoft.Json;
+    using System.Collections;
+    using System.Collections.Generic;
     using System.Linq;
 
-    public partial class BroadcastLastCommitmentModel
+    public partial class CommitmentBroadcastResponse
     {
         /// <summary>
-        /// Initializes a new instance of the BroadcastLastCommitmentModel
+        /// Initializes a new instance of the CommitmentBroadcastResponse
         /// class.
         /// </summary>
-        public BroadcastLastCommitmentModel()
+        public CommitmentBroadcastResponse()
         {
           CustomInit();
         }
 
         /// <summary>
-        /// Initializes a new instance of the BroadcastLastCommitmentModel
+        /// Initializes a new instance of the CommitmentBroadcastResponse
         /// class.
         /// </summary>
-        public BroadcastLastCommitmentModel(string multisig = default(string), string asset = default(string))
+        public CommitmentBroadcastResponse(IList<CommitmentBroadcastInfo> commitmentBroadcasts = default(IList<CommitmentBroadcastInfo>))
         {
-            Multisig = multisig;
-            Asset = asset;
+            CommitmentBroadcasts = commitmentBroadcasts;
             CustomInit();
         }
 
@@ -39,13 +40,8 @@ namespace Lykke.Job.OffchainCashoutScheduler.BitcoinApi.Models
 
         /// <summary>
         /// </summary>
-        [JsonProperty(PropertyName = "multisig")]
-        public string Multisig { get; set; }
-
-        /// <summary>
-        /// </summary>
-        [JsonProperty(PropertyName = "asset")]
-        public string Asset { get; set; }
+        [JsonProperty(PropertyName = "commitmentBroadcasts")]
+        public IList<CommitmentBroadcastInfo> CommitmentBroadcasts { get; set; }
 
     }
 }

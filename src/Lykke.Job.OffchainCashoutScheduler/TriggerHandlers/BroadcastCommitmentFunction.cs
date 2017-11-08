@@ -27,8 +27,8 @@ namespace Lykke.Job.OffchainCashoutScheduler.TriggerHandlers
         private readonly IBitcoinApi _bitcoinApi;
         private readonly ILog _logger;
 
-        public BroadcastCommitmentFunction(IOffchainRequestService offchainRequestService, ILog logger, 
-            IBitcoinApi bitcoinApi, IWalletCredentialsRepository walletCredentialsRepository, 
+        public BroadcastCommitmentFunction(IOffchainRequestService offchainRequestService, ILog logger,
+            IBitcoinApi bitcoinApi, IWalletCredentialsRepository walletCredentialsRepository,
             IOffchainSettingsRepository offchainSettingsRepository, ISlackNotificationsSender slackNotificationsSender)
         {
             _offchainRequestService = offchainRequestService;
@@ -52,34 +52,43 @@ namespace Lykke.Job.OffchainCashoutScheduler.TriggerHandlers
 
             var maxBroadcastCount = await _offchainSettingsRepository.Get(Constants.MaxCommitmentBroadcastCountSettingsKey, MaxBroadcastCount);
 
-            foreach (var item in ordered)
+            try
             {
-                if (broadcastedCount >= maxBroadcastCount)
-                    return;
-
-                if (multisigsWithOldRequests.ContainsKey(item.Multisig))
+                foreach (var item in ordered)
                 {
-                    try
+                    if (broadcastedCount >= maxBroadcastCount)
+                        return;
+
+                    if (multisigsWithOldRequests.ContainsKey(item.Multisig))
                     {
-                        await _logger.WriteInfoAsync(nameof(BroadcastCommitmentFunction), nameof(Process), $"Multisig: {item.Multisig}", "Start commitment broadcasting");
+                        try
+                        {
+                            await _logger.WriteInfoAsync(nameof(BroadcastCommitmentFunction), nameof(Process),
+                                $"Multisig: {item.Multisig}", "Start commitment broadcasting");
 
-                        var response = await BroadcastCommitment(item.Multisig, Constants.BtcAssetId);
+                            var response = await BroadcastCommitment(item.Multisig, Constants.BtcAssetId);
 
-                        broadcastedCount++;
+                            broadcastedCount++;
 
-                        await _offchainRequestService.Complete(multisigsWithOldRequests[item.Multisig]);
+                            await _offchainRequestService.Complete(multisigsWithOldRequests[item.Multisig]);
 
-                        await _logger.WriteInfoAsync(nameof(BroadcastCommitmentFunction), nameof(Process), $"Multisig: {item.Multisig}, hash: {response.TransactionHash}", "Finish commitment broadcasting");
-                    }
-                    catch (Exception e)
-                    {
-                        await _logger.WriteErrorAsync(nameof(BroadcastCommitmentFunction), nameof(Process), $"Multisig: {item.Multisig}", e);
+                            await _logger.WriteInfoAsync(nameof(BroadcastCommitmentFunction), nameof(Process),
+                                $"Multisig: {item.Multisig}, hash: {response.TransactionHash}",
+                                "Finish commitment broadcasting");
+                        }
+                        catch (Exception e)
+                        {
+                            await _logger.WriteErrorAsync(nameof(BroadcastCommitmentFunction), nameof(Process),
+                                $"Multisig: {item.Multisig}", e);
+                        }
                     }
                 }
             }
-
-            if (broadcastedCount > 0)
-                await _slackNotificationsSender.SendAsync("Offchain", ":information_source:", $"New {broadcastedCount} hub commitments were broadcasted");
+            finally
+            {
+                if (broadcastedCount > 0)
+                    await _slackNotificationsSender.SendAsync("Offchain", ":information_source:", $"New {broadcastedCount} hub commitments were broadcasted");
+            }
         }
 
         private async Task<Dictionary<string, string>> PrepareExistingRequests()

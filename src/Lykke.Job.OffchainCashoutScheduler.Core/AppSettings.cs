@@ -5,6 +5,7 @@
         public OffchainCashoutSchedulerSettings OffchainCashoutSchedulerJob { get; set; }
         public AppNotificationSettings AppNotifications { get; set; }
         public SlackNotificationsSettings SlackNotifications { get; set; }
+        public ClientAccountClientSettings ClientAccountClient { get; set; }
 
         public class OffchainCashoutSchedulerSettings
         {
@@ -39,6 +40,11 @@
             public string HubConnString { get; set; }
 
             public string HubName { get; set; }
+        }
+
+        public class ClientAccountClientSettings
+        {
+            public string ServiceUrl { get; set; }
         }
     }
 }

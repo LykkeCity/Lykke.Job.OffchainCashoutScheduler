@@ -1,5 +1,4 @@
 ﻿using Autofac;
-using Autofac.Extensions.DependencyInjection;
 using AzureStorage.Tables;
 using Common.Log;
 using Lykke.Job.OffchainCashoutScheduler.AzureRepositories.ClientPersonalInfo;
@@ -14,7 +13,6 @@ using Lykke.Job.OffchainCashoutScheduler.Core.Services;
 using Lykke.Job.OffchainCashoutScheduler.Services;
 using Lykke.Job.OffchainCashoutScheduler.Services.ClientAccountApi;
 using Lykke.SettingsReader;
-using Microsoft.Extensions.DependencyInjection;
 using System;
 
 namespace Lykke.Job.OffchainCashoutScheduler.Modules
@@ -55,34 +53,35 @@ namespace Lykke.Job.OffchainCashoutScheduler.Modules
 
         private void BindAzure(ContainerBuilder builder)
         {
+            var db = _settingsManager.Nested(x => x.OffchainCashoutSchedulerJob.Db);
             builder.RegisterInstance<IClientSettingsRepository>(
                 new ClientSettingsRepository(
-                    AzureTableStorage<ClientSettingsEntity>.Create(_settingsManager.ConnectionString(i => i.OffchainCashoutSchedulerJob.Db.ClientPersonalInfoConnString), "TraderSettings", _log)));
+                    AzureTableStorage<ClientSettingsEntity>.Create(db.ConnectionString(i => i.ClientPersonalInfoConnString), "TraderSettings", _log)));
 
             builder.RegisterInstance<IWalletCredentialsRepository>(
                 new WalletCredentialsRepository(
-                    AzureTableStorage<WalletCredentialsEntity>.Create(_settingsManager.ConnectionString(i => i.OffchainCashoutSchedulerJob.Db.ClientPersonalInfoConnString),
+                    AzureTableStorage<WalletCredentialsEntity>.Create(db.ConnectionString(i => i.ClientPersonalInfoConnString),
                         "WalletCredentials", _log)));
 
             builder.RegisterInstance<IOffchainRequestRepository>(
                 new OffchainRequestRepository(
-                    AzureTableStorage<OffchainRequestEntity>.Create(_settingsManager.ConnectionString(i => i.OffchainCashoutSchedulerJob.Db.ClientPersonalInfoConnString), "OffchainRequests", _log)));
+                    AzureTableStorage<OffchainRequestEntity>.Create(db.ConnectionString(i => i.OffchainConnString), "OffchainRequests", _log)));
 
             builder.RegisterInstance<IOffchainTransferRepository>(
                 new OffchainTransferRepository(
-                    AzureTableStorage<OffchainTransferEntity>.Create(_settingsManager.ConnectionString(i => i.OffchainCashoutSchedulerJob.Db.ClientPersonalInfoConnString), "OffchainTransfers", _log)));
+                    AzureTableStorage<OffchainTransferEntity>.Create(db.ConnectionString(i => i.OffchainConnString), "OffchainTransfers", _log)));
 
             builder.RegisterInstance<IOffchainOrdersRepository>(
                 new OffchainOrderRepository(
-                    AzureTableStorage<OffchainOrder>.Create(_settingsManager.ConnectionString(i => i.OffchainCashoutSchedulerJob.Db.ClientPersonalInfoConnString), "OffchainOrders", _log)));
+                    AzureTableStorage<OffchainOrder>.Create(db.ConnectionString(i => i.OffchainConnString), "OffchainOrders", _log)));
 
             builder.RegisterInstance<IOffchainIgnoreRepository>(
                 new OffchainIgnoreRepository(
-                    AzureTableStorage<OffchainIgnoreEntity>.Create(_settingsManager.ConnectionString(i => i.OffchainCashoutSchedulerJob.Db.ClientPersonalInfoConnString), "OffchainClientsIgnore", _log)));
+                    AzureTableStorage<OffchainIgnoreEntity>.Create(db.ConnectionString(i => i.OffchainConnString), "OffchainClientsIgnore", _log)));
 
             builder.RegisterInstance<IOffchainSettingsRepository>(
                 new OffchainSettingsRepository(
-                    AzureTableStorage<OffchainSettingEntity>.Create(_settingsManager.ConnectionString(i => i.OffchainCashoutSchedulerJob.Db.ClientPersonalInfoConnString), "OffchainSettings", _log)));
+                    AzureTableStorage<OffchainSettingEntity>.Create(db.ConnectionString(i => i.OffchainConnString), "OffchainSettings", _log)));
         }
 
         public void BindServices(ContainerBuilder builder)

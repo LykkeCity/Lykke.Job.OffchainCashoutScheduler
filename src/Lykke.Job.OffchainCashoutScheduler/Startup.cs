@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Threading.Tasks;
 using Autofac;
 using Autofac.Extensions.DependencyInjection;
 using AzureStorage.Tables;
@@ -10,7 +9,6 @@ using Lykke.Job.OffchainCashoutScheduler.Core;
 using Lykke.Job.OffchainCashoutScheduler.Models;
 using Lykke.Job.OffchainCashoutScheduler.Modules;
 using Lykke.JobTriggers.Extenstions;
-using Lykke.JobTriggers.Triggers;
 using Lykke.Logs;
 using Lykke.Logs.Slack;
 using Lykke.SettingsReader;
@@ -45,33 +43,39 @@ namespace Lykke.Job.OffchainCashoutScheduler
 
         public IServiceProvider ConfigureServices(IServiceCollection services)
         {
-            services.AddMvc()
-                .AddJsonOptions(options =>
+            try
+            {
+                services.AddMvc()
+                        .AddJsonOptions(options =>
+                        {
+                            options.SerializerSettings.ContractResolver =
+                                new Newtonsoft.Json.Serialization.DefaultContractResolver();
+                        });
+
+                services.AddSwaggerGen(options =>
                 {
-                    options.SerializerSettings.ContractResolver =
-                        new Newtonsoft.Json.Serialization.DefaultContractResolver();
+                    options.DefaultLykkeConfiguration("v1", "OffchainCashoutScheduler API");
                 });
 
-            services.AddSwaggerGen(options =>
+                var builder = new ContainerBuilder();
+                var appSettings = Configuration.LoadSettings<AppSettings>();
+                Log = CreateLogWithSlack(services, appSettings);
+
+                builder.RegisterModule(new JobModule(appSettings, Log));
+
+                builder.AddTriggers();
+
+                builder.Populate(services);
+
+                ApplicationContainer = builder.Build();
+
+                return new AutofacServiceProvider(ApplicationContainer);
+            }
+            catch (Exception ex)
             {
-                options.DefaultLykkeConfiguration("v1", "OffchainCashoutScheduler API");
-            });
-
-            var builder = new ContainerBuilder();      
-
-            var appSettings = Configuration.LoadSettings<AppSettings>();
-
-            var log = CreateLogWithSlack(services, appSettings);
-
-            builder.RegisterModule(new JobModule(appSettings, log));
-
-            builder.AddTriggers();
-
-            builder.Populate(services);
-
-            ApplicationContainer = builder.Build();
-
-            return new AutofacServiceProvider(ApplicationContainer);
+                Log?.WriteFatalErrorAsync(nameof(Startup), nameof(ConfigureServices), "", ex).Wait();
+                throw;
+            }
         }
 
         public void Configure(IApplicationBuilder app, IHostingEnvironment env, IApplicationLifetime appLifetime)
@@ -92,16 +96,18 @@ namespace Lykke.Job.OffchainCashoutScheduler
                     x.RoutePrefix = "swagger/ui";
                     x.SwaggerEndpoint("/swagger/v1/swagger.json", "v1");
                 });
+
+                appLifetime.ApplicationStopped.Register(() =>
+                {
+                    ApplicationContainer.Dispose();
+                });
             }
             catch (Exception ex)
             {
-                Log?.WriteFatalErrorAsync(nameof(Startup), nameof(ConfigureServices), "", ex).Wait();
+                Log?.WriteFatalErrorAsync(nameof(Startup), nameof(Configure), "", ex).Wait();
                 throw;
             }
-
         }
-
-       
 
         private static ILog CreateLogWithSlack(IServiceCollection services, IReloadingManager<AppSettings> settings)
         {

@@ -35,14 +35,14 @@ namespace Lykke.Job.OffchainCashoutScheduler.TriggerHandlers
             _bitcoinApi = bitcoinApi;
         }
 
-        [TimerTrigger("00:01:00")]
+        [TimerTrigger("00:12:00")]
         public async Task Process()
         {
             var setting = await GetSetting();
 
             if (!setting.Enabled)
                 return;
-
+            
             await _log.WriteInfoAsync("ManualHubCashoutFunction", "Process", setting.ToJson(), "Start manual cashout");
 
             await GenerateRequestsForAsset(setting.Asset, setting.MinHubBalance, setting.LastActivity);

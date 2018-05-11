@@ -51,8 +51,6 @@ namespace Lykke.Job.OffchainCashoutScheduler.Services.ClientAccountApi
 
             httpClient.BaseAddress = new Uri($"{_connectionString}/api/ClientAccountInformation/getClientById");
             httpClient.DefaultRequestHeaders.Accept.Clear();
-            httpClient.DefaultRequestHeaders.Accept.Add(
-                new MediaTypeWithQualityHeaderValue("application/json"));
 
         }
 

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading.Tasks;
 using Autofac;
 using Autofac.Extensions.DependencyInjection;
 using AzureStorage.Tables;
@@ -9,7 +10,9 @@ using Lykke.Job.OffchainCashoutScheduler.Core;
 using Lykke.Job.OffchainCashoutScheduler.Models;
 using Lykke.Job.OffchainCashoutScheduler.Modules;
 using Lykke.JobTriggers.Extenstions;
+using Lykke.JobTriggers.Triggers;
 using Lykke.Logs;
+using Lykke.Logs.Slack;
 using Lykke.SettingsReader;
 using Lykke.SlackNotification.AzureQueue;
 using Microsoft.AspNetCore.Builder;
@@ -24,6 +27,9 @@ namespace Lykke.Job.OffchainCashoutScheduler
         public IHostingEnvironment Environment { get; }
         public IContainer ApplicationContainer { get; set; }
         public IConfigurationRoot Configuration { get; }
+        public ILog Log { get; private set; }
+
+        private const string AppName = "Lykke.Job.OffchainCashoutScheduler";
 
         public Startup(IHostingEnvironment env)
         {
@@ -51,10 +57,10 @@ namespace Lykke.Job.OffchainCashoutScheduler
                 options.DefaultLykkeConfiguration("v1", "OffchainCashoutScheduler API");
             });
 
-            var builder = new ContainerBuilder();
-            var appSettings = Environment.IsDevelopment()
-                ? Configuration.Get<AppSettings>()
-                : HttpSettingsLoader.Load<AppSettings>(Configuration.GetValue<string>("SettingsUrl"));
+            var builder = new ContainerBuilder();      
+
+            var appSettings = Configuration.LoadSettings<AppSettings>();
+
             var log = CreateLogWithSlack(services, appSettings);
 
             builder.RegisterModule(new JobModule(appSettings, log));
@@ -70,57 +76,82 @@ namespace Lykke.Job.OffchainCashoutScheduler
 
         public void Configure(IApplicationBuilder app, IHostingEnvironment env, IApplicationLifetime appLifetime)
         {
-            if (env.IsDevelopment())
+            try
             {
-                app.UseDeveloperExceptionPage();
+                if (env.IsDevelopment())
+                {
+                    app.UseDeveloperExceptionPage();
+                }
+
+                app.UseLykkeMiddleware("OffchainCashoutScheduler", ex => new ErrorResponse { ErrorMessage = "Technical problem" });
+
+                app.UseMvc();
+                app.UseSwagger();
+                app.UseSwaggerUI(x =>
+                {
+                    x.RoutePrefix = "swagger/ui";
+                    x.SwaggerEndpoint("/swagger/v1/swagger.json", "v1");
+                });
+            }
+            catch (Exception ex)
+            {
+                Log?.WriteFatalErrorAsync(nameof(Startup), nameof(ConfigureServices), "", ex).Wait();
+                throw;
             }
 
-            app.UseLykkeMiddleware("OffchainCashoutScheduler", ex => new ErrorResponse { ErrorMessage = "Technical problem" });
-
-            app.UseMvc();
-            app.UseSwagger();
-            app.UseSwaggerUi();
-
-            appLifetime.ApplicationStopped.Register(() =>
-            {
-                ApplicationContainer.Dispose();
-            });
         }
 
-        private static ILog CreateLogWithSlack(IServiceCollection services, AppSettings settings)
+       
+
+        private static ILog CreateLogWithSlack(IServiceCollection services, IReloadingManager<AppSettings> settings)
         {
-            LykkeLogToAzureStorage logToAzureStorage = null;
+            var consoleLogger = new LogToConsole();
+            var aggregateLogger = new AggregateLogger();
 
-            var logToConsole = new LogToConsole();
-            var logAggregate = new LogAggregate();
+            aggregateLogger.AddLog(consoleLogger);
 
-            logAggregate.AddLogger(logToConsole);
+            var dbLogConnectionStringManager = settings.Nested(x => x.OffchainCashoutSchedulerJob.Db.LogsConnString);
+            var dbLogConnectionString = dbLogConnectionStringManager.CurrentValue;
 
-            var dbLogConnectionString = settings.OffchainCashoutSchedulerJob.Db.LogsConnString;
-
-            // Creating azure storage logger, which logs own messages to concole log
-            if (!string.IsNullOrEmpty(dbLogConnectionString) && !(dbLogConnectionString.StartsWith("${") && dbLogConnectionString.EndsWith("}")))
+            if (string.IsNullOrEmpty(dbLogConnectionString))
             {
-                logToAzureStorage = new LykkeLogToAzureStorage("Lykke.Job.OffchainCashoutScheduler", new AzureTableStorage<LogEntity>(
-                    dbLogConnectionString, "OffchainCashoutSchedulerLog", logToConsole));
-
-                logAggregate.AddLogger(logToAzureStorage);
+                consoleLogger.WriteWarningAsync(nameof(Startup), nameof(CreateLogWithSlack), "Table loggger is not inited").Wait();
+                return aggregateLogger;
             }
 
-            // Creating aggregate log, which logs to console and to azure storage, if last one specified
-            var log = logAggregate.CreateLogger();
+            if (dbLogConnectionString.StartsWith("${") && dbLogConnectionString.EndsWith("}"))
+                throw new InvalidOperationException($"LogsConnString {dbLogConnectionString} is not filled in settings");
+
+            var persistenceManager = new LykkeLogToAzureStoragePersistenceManager(
+                AppName,
+                AzureTableStorage<LogEntity>.Create(dbLogConnectionStringManager, "OffchainCashoutSchedulerJobLog", consoleLogger),
+                consoleLogger);
 
             // Creating slack notification service, which logs own azure queue processing messages to aggregate log
             var slackService = services.UseSlackNotificationsSenderViaAzureQueue(new AzureQueueIntegration.AzureQueueSettings
             {
-                ConnectionString = settings.SlackNotifications.AzureQueue.ConnectionString,
-                QueueName = settings.SlackNotifications.AzureQueue.QueueName
-            }, log);
+                ConnectionString = settings.CurrentValue.SlackNotifications.AzureQueue.ConnectionString,
+                QueueName = settings.CurrentValue.SlackNotifications.AzureQueue.QueueName
+            }, aggregateLogger);
 
-            // Finally, setting slack notification for azure storage log, which will forward necessary message to slack service
-            logToAzureStorage?.SetSlackNotification(slackService);
+            var slackNotificationsManager = new LykkeLogToAzureSlackNotificationsManager(AppName, slackService, consoleLogger);
 
-            return log;
+            // Creating azure storage logger, which logs own messages to console log
+            var azureStorageLogger = new LykkeLogToAzureStorage(
+                AppName,
+                persistenceManager,
+                slackNotificationsManager,
+                consoleLogger);
+
+
+            azureStorageLogger.Start();
+
+            var logToSlack = LykkeLogToSlack.Create(slackService, "OffchainCashoutSchedulerJobLog", LogLevel.Error | LogLevel.FatalError | LogLevel.Warning);
+
+            aggregateLogger.AddLog(logToSlack);
+            aggregateLogger.AddLog(azureStorageLogger);
+
+            return aggregateLogger;
         }
     }
 }

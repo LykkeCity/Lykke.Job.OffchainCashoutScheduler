@@ -2,7 +2,7 @@
 using System.Net;
 using Lykke.Job.OffchainCashoutScheduler.Models;
 using Microsoft.AspNetCore.Mvc;
-using Swashbuckle.SwaggerGen.Annotations;
+using Swashbuckle.AspNetCore.SwaggerGen;
 
 namespace Lykke.Job.OffchainCashoutScheduler.Controllers
 {

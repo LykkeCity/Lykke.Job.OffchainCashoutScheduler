@@ -19,20 +19,17 @@ namespace Lykke.Job.OffchainCashoutScheduler.Controllers
         [ProducesResponseType(typeof(ErrorResponse), (int)HttpStatusCode.InternalServerError)]
         public IActionResult Get()
         {
-            // TODO: Check job health status here, if job unhealthy, send ErrorResponse
-            // if (!isHealthy)
-            // {
-            //     return StatusCode((int) HttpStatusCode.InternalServerError, new ErrorResponse
-            //     {
-            //         ErrorMessage = "Problem description"
-            //     });
-            // }
-
-            // NOTE: Feel free to extend IsAliveResponse, to display job-specific health status
+            // NOTE: Feel free to extend IsAliveResponse, to display job-specific indicators
             return Ok(new IsAliveResponse
             {
+                Name = Microsoft.Extensions.PlatformAbstractions.PlatformServices.Default.Application.ApplicationName,
                 Version = Microsoft.Extensions.PlatformAbstractions.PlatformServices.Default.Application.ApplicationVersion,
-                Env = Environment.GetEnvironmentVariable("Env")
+                Env = Environment.GetEnvironmentVariable("ENV_INFO"),
+#if DEBUG
+                IsDebug = true,
+#else
+                IsDebug = false,
+#endif
             });
         }
     }

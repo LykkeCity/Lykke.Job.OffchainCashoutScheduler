@@ -1,10 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 using Autofac;
 using Lykke.Job.OffchainCashoutScheduler.BitcoinApi;
 using Lykke.Job.OffchainCashoutScheduler.Core;
 using Lykke.Job.OffchainCashoutScheduler.Core.Services;
+using Lykke.Job.OffchainCashoutScheduler.Services.ClientAccountApi;
 
 namespace Lykke.Job.OffchainCashoutScheduler.Services
 {
@@ -17,6 +16,8 @@ namespace Lykke.Job.OffchainCashoutScheduler.Services
             ioc.Register<IAppNotifications>(x => new SrvAppNotifications(settings.AppNotifications.HubConnString, settings.AppNotifications.HubName)).SingleInstance();
 
             ioc.Register<IBitcoinApi>(x => new BitcoinApi.BitcoinApi(new Uri(settings.OffchainCashoutSchedulerJob.BitcoinApiUrl)));
+
+            ioc.Register<IClientAccounts>(x => new ClientAccounts(settings.ClientAccountClient.ServiceUrl));
         }
     }
 }

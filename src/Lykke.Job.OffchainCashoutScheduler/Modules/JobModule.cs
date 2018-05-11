@@ -4,7 +4,6 @@ using Common.Log;
 using Lykke.Job.OffchainCashoutScheduler.AzureRepositories;
 using Lykke.Job.OffchainCashoutScheduler.Core;
 using Lykke.Job.OffchainCashoutScheduler.Services;
-using Lykke.JobTriggers.Abstractions;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Lykke.Job.OffchainCashoutScheduler.Modules

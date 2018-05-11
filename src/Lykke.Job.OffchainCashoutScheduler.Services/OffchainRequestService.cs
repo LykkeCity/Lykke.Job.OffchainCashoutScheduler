@@ -13,15 +13,15 @@ namespace Lykke.Job.OffchainCashoutScheduler.Services
         private readonly IOffchainRequestRepository _offchainRequestRepository;
         private readonly IOffchainTransferRepository _offchainTransferRepository;
         private readonly IClientSettingsRepository _clientSettingsRepository;
-        private readonly IClientAccountsRepository _clientAccountsRepository;
+        private readonly IClientAccounts _clientAccounts;
         private readonly IAppNotifications _appNotifications;
 
-        public OffchainRequestService(IOffchainRequestRepository offchainRequestRepository, IOffchainTransferRepository offchainTransferRepository, IClientSettingsRepository clientSettingsRepository, IClientAccountsRepository clientAccountsRepository, IAppNotifications appNotifications)
+        public OffchainRequestService(IOffchainRequestRepository offchainRequestRepository, IOffchainTransferRepository offchainTransferRepository, IClientSettingsRepository clientSettingsRepository, IClientAccounts clientAccounts, IAppNotifications appNotifications)
         {
             _offchainRequestRepository = offchainRequestRepository;
             _offchainTransferRepository = offchainTransferRepository;
             _clientSettingsRepository = clientSettingsRepository;
-            _clientAccountsRepository = clientAccountsRepository;
+            _clientAccounts = clientAccounts;
             _appNotifications = appNotifications;
         }
 
@@ -37,7 +37,7 @@ namespace Lykke.Job.OffchainCashoutScheduler.Services
             var pushSettings = await _clientSettingsRepository.GetSettings<PushNotificationsSettings>(clientId);
             if (pushSettings.Enabled)
             {
-                var clientAcc = await _clientAccountsRepository.GetByIdAsync(clientId);
+                var clientAcc = await _clientAccounts.GetByIdAsync(clientId);
 
                 await _appNotifications.SendDataNotificationToAllDevicesAsync(new[] { clientAcc.NotificationsId }, NotificationType.OffchainRequest, "Wallet");
             }

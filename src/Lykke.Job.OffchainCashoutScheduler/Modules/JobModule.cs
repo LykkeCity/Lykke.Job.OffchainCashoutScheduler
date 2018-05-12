@@ -55,9 +55,6 @@ namespace Lykke.Job.OffchainCashoutScheduler.Modules
         private void BindAzure(ContainerBuilder builder)
         {
             var db = _settingsManager.Nested(x => x.OffchainCashoutSchedulerJob.Db);
-            builder.RegisterInstance<IClientSettingsRepository>(
-                new ClientSettingsRepository(
-                    AzureTableStorage<ClientSettingsEntity>.Create(db.ConnectionString(i => i.ClientPersonalInfoConnString), "TraderSettings", _log)));
 
             builder.RegisterInstance<IWalletCredentialsRepository>(
                 new WalletCredentialsRepository(

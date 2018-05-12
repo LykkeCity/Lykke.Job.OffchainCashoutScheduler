@@ -11,9 +11,9 @@ using Lykke.Job.OffchainCashoutScheduler.Core.Domain.Offchain;
 using Lykke.Job.OffchainCashoutScheduler.Core.Domain.Settings;
 using Lykke.Job.OffchainCashoutScheduler.Core.Services;
 using Lykke.Job.OffchainCashoutScheduler.Services;
-using Lykke.Job.OffchainCashoutScheduler.Services.ClientAccountApi;
 using Lykke.SettingsReader;
 using System;
+using Lykke.Service.ClientAccount.Client;
 
 namespace Lykke.Job.OffchainCashoutScheduler.Modules
 {
@@ -49,6 +49,7 @@ namespace Lykke.Job.OffchainCashoutScheduler.Modules
 
             BindAzure(builder);
             BindServices(builder);
+            BindClients(builder);
         }
 
         private void BindAzure(ContainerBuilder builder)
@@ -84,16 +85,18 @@ namespace Lykke.Job.OffchainCashoutScheduler.Modules
                     AzureTableStorage<OffchainSettingEntity>.Create(db.ConnectionString(i => i.OffchainConnString), "OffchainSettings", _log)));
         }
 
-        public void BindServices(ContainerBuilder builder)
+        private void BindServices(ContainerBuilder builder)
         {
             builder.RegisterType<OffchainRequestService>().As<IOffchainRequestService>();
 
             builder.Register<IAppNotifications>(x => new SrvAppNotifications(_settings.AppNotifications.HubConnString, _settings.AppNotifications.HubName)).SingleInstance();
 
             builder.Register<IBitcoinApi>(x => new BitcoinApi.BitcoinApi(new Uri(_settings.OffchainCashoutSchedulerJob.BitcoinApiUrl)));
-
-            builder.Register<IClientAccounts>(x => new ClientAccounts(_settings.ClientAccountClient.ServiceUrl));
         }
 
+        private void BindClients(ContainerBuilder builder)
+        {
+            builder.RegisterLykkeServiceClient(_settings.ClientAccountServiceClient.ServiceUrl);
+        }
     }
 }

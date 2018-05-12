@@ -1,10 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
 using System.Threading.Tasks;
 using Lykke.Job.OffchainCashoutScheduler.Core.Domain.ClientPersonalInfo;
 using Lykke.Job.OffchainCashoutScheduler.Core.Domain.Offchain;
 using Lykke.Job.OffchainCashoutScheduler.Core.Services;
+using Lykke.Service.ClientAccount.Client;
 
 namespace Lykke.Job.OffchainCashoutScheduler.Services
 {
@@ -13,15 +13,20 @@ namespace Lykke.Job.OffchainCashoutScheduler.Services
         private readonly IOffchainRequestRepository _offchainRequestRepository;
         private readonly IOffchainTransferRepository _offchainTransferRepository;
         private readonly IClientSettingsRepository _clientSettingsRepository;
-        private readonly IClientAccounts _clientAccounts;
+        private readonly IClientAccountClient _clientAccountClient;
         private readonly IAppNotifications _appNotifications;
 
-        public OffchainRequestService(IOffchainRequestRepository offchainRequestRepository, IOffchainTransferRepository offchainTransferRepository, IClientSettingsRepository clientSettingsRepository, IClientAccounts clientAccounts, IAppNotifications appNotifications)
+        public OffchainRequestService(
+            IOffchainRequestRepository offchainRequestRepository,
+            IOffchainTransferRepository offchainTransferRepository, 
+            IClientSettingsRepository clientSettingsRepository,
+            IClientAccountClient clientAccountClient, 
+            IAppNotifications appNotifications)
         {
             _offchainRequestRepository = offchainRequestRepository;
             _offchainTransferRepository = offchainTransferRepository;
             _clientSettingsRepository = clientSettingsRepository;
-            _clientAccounts = clientAccounts;
+            _clientAccountClient = clientAccountClient ?? throw new ArgumentNullException(nameof(clientAccountClient));
             _appNotifications = appNotifications;
         }
 
@@ -37,7 +42,7 @@ namespace Lykke.Job.OffchainCashoutScheduler.Services
             var pushSettings = await _clientSettingsRepository.GetSettings<PushNotificationsSettings>(clientId);
             if (pushSettings.Enabled)
             {
-                var clientAcc = await _clientAccounts.GetByIdAsync(clientId);
+                var clientAcc = await _clientAccountClient.GetByIdAsync(clientId);
 
                 await _appNotifications.SendDataNotificationToAllDevicesAsync(new[] { clientAcc.NotificationsId }, NotificationType.OffchainRequest, "Wallet");
             }

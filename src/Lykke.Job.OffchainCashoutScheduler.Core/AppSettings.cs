@@ -5,7 +5,7 @@
         public OffchainCashoutSchedulerSettings OffchainCashoutSchedulerJob { get; set; }
         public AppNotificationSettings AppNotifications { get; set; }
         public SlackNotificationsSettings SlackNotifications { get; set; }
-        public ClientAccountClientSettings ClientAccountClient { get; set; }
+        public ClientAccountClientSettings ClientAccountServiceClient { get; set; }
 
         public class OffchainCashoutSchedulerSettings
         {
